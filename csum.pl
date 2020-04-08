@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-
+no warnings 'recursion';
 # csum.pl: print menu item combinations whose total matches the target price
 #
 # usage: perl csum.pl < <input file>
@@ -15,53 +15,82 @@ use warnings;
 #         <item name>,<item price>
 #     <price> format: $<dollars>.<cents>
 #
-my ($candidates, $target);
+my ($file) = @ARGV;
 
-# TODO: add -h command line option to print usage information
+unless (
+       $file
+    && $file ne '-h' # DONE: add -h command line option to print usage information
+) {
+    die "usage: $0 <input file>\n";
+}
 
-while (<STDIN>) {
+my $candidates = [];
+my @combos     = ();
+my $fh         = undef;
+my $target     = 0;
+
+unless (open($fh, '<', $file)) {
+    die "Could not read file $file: $!\n";
+}
+
+while (<$fh>) {
    chomp;
    push @$candidates, $_ if (!/^\s*$/); #skip blank lines
 }
 
-$target = shift @$candidates; 
-print "\ntarget order price:\n    $target\n";
-print "\nmenu item candidates:\n    ";
-print join("\n    ",@$candidates) . "\n";
+close $fh;
+
+$target = shift @$candidates;
+
+print qq{
+target order price:
+    $target
+
+menu item candidates:
+    } . join("\n    ",@$candidates) . "\n";
 
 # TODO: add input validation subroutine and exit with message on error
 
-$target =~ s/\D//g; #convert price to integer
-@$candidates = map { [ split(",", $_) ] } @$candidates; #split candidate name,price 
+@$candidates = map { [ split(",", $_) ] } @$candidates; #split candidate name,price
+
 map { $_->[1] =~ s/\D//g } @$candidates; #and convert price to integer
+$target       =~ s/\D//g; #convert price to integer
+my $n         = $#$candidates;
+
+rsum($target, 0, {}); #find menu item combinations whose total is target
 
 print "\norders matching the target price:\n";
-rsum( $candidates, $target, 0, [] ); #print menu item combinations whose total is target
+# DONE: improve output format: include item count rather than repeating items
+my $combono = 0;
+# print orders!
+foreach my $combo (@combos) {
+    print ++$combono . ': ';
+    print join(', ',
+        map { '(' . $combo->{$_} . ') ' . $_ }
+            grep { $combo->{$_} } sort { $a cmp $b } keys %$combo) . " \n";
+}
 
 sub rsum {
-    # rsum: recursive subroutine to print subsets of candidates whose total is target
+    # rsum: recursive subroutine to create target price orders
     # $candidates: array of candidate arrays [ <item name>, <item price in cents>]
     # $target: target sum - format <target total cost in cents>
     # $index: index of current candidate
-    # $sublist: array of current sublist
-    my ( $candidates, $target, $index, $sublist ) = @_;
+    # $subhash: hash of running orders
+    my ($target, $index, $subhash) = @_;
 
     # TODO: add recursion level limit and exit when exceeded
 
-    if ( $target == 0 ) { #match found
-        # TODO: improve output format: include item count rather than repeating items
-        my $subset = join(', ', map {$_->[0]} @$sublist);
-        print "    $subset\n";
-        return;
-    }
+    if ($target > 0) {
+        foreach my $cand (@$candidates[$index..$n]) {
+           # DONE: improve output format: include item count rather than repeating items
+           #    this change also makes this script run over 10X faster!!!
+           $subhash->{ $cand->[0] } += 1;
+           
+           rsum( $target - $cand->[1], $index++, $subhash); #keep looking
 
-    if ( $target < 0 ) { #match not found
-        return;
-    }
-
-    for (my $i = $index; $i < @$candidates; $i++) { #check for match
-        push @$sublist, $candidates->[$i]; # add candidate to list
-        rsum( $candidates, $target - $candidates->[$i]->[1], $i, $sublist ); #keep looking 
-        pop @$sublist; #remove last candidate and keep looking
+           $subhash->{ $cand->[0] } -= 1;
+        }
+    } elsif ($target == 0) {
+        push @combos, { %$subhash };
     }
 }

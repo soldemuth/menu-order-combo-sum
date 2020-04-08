@@ -54,15 +54,11 @@ print join("\n    ",@$candidates) . "\n";
 
 map { $_->[1] =~ s/\D//g } @$candidates; #and convert price to integer
 $target       =~ s/\D//g; #convert price to integer
+my $n         = $#$candidates;
 
-print "\norders matching the target price:\n";
-
-my $n = $#$candidates;
-
-my $level = undef;
-$$level = 0;
 rsum($target, 0, {}); #find menu item combinations whose total is target
 
+print "\norders matching the target price:\n";
 # DONE: improve output format: include item count rather than repeating items
 my $combono = 0;
 # print orders!
@@ -79,7 +75,7 @@ sub rsum {
     # $target: target sum - format <target total cost in cents>
     # $index: index of current candidate
     # $subhash: hash of running orders
-    my ($target, $index, $subhash, $level) = @_;
+    my ($target, $index, $subhash) = @_;
 
     # TODO: add recursion level limit and exit when exceeded
 

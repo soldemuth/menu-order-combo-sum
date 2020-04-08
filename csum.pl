@@ -44,9 +44,12 @@ close $fh;
 
 $target = shift @$candidates;
 
-print "\ntarget order price:\n    $target\n";
-print "\nmenu item candidates:\n    ";
-print join("\n    ",@$candidates) . "\n";
+print qq{
+target order price:
+    $target
+
+menu item candidates:
+    } . join("\n    ",@$candidates) . "\n";
 
 # TODO: add input validation subroutine and exit with message on error
 

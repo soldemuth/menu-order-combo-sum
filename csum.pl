@@ -20,16 +20,14 @@ my ($file) = @ARGV;
 unless (
        $file
     && $file ne '-h' # DONE: add -h command line option to print usage information
-
 ) {
     die "usage: $0 <input file>\n";
 }
 
 my $candidates = [];
 my @combos     = ();
+my $fh         = undef;
 my $target     = 0;
-
-my $fh = undef;
 
 unless (open($fh, '<', $file)) {
     die "Could not read file $file: $!\n";
@@ -87,6 +85,7 @@ sub rsum {
            # DONE: improve output format: include item count rather than repeating items
            #    this change also makes this script run over 10X faster!!!
            $subhash->{ $cand->[0] } += 1;
+           
            rsum( $target - $cand->[1], $index++, $subhash); #keep looking
 
            $subhash->{ $cand->[0] } -= 1;
